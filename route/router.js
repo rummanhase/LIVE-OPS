@@ -78,7 +78,9 @@ function authenticateToken(req, res, next) {
     const updatedOffer = req.body;
     
     try {
-      let savedOffer = await offerSchema.findById(offerId);
+        let savedOffer = await offerModel.findOne({ offer_id: offerId });
+        // console.log(savedOffer);
+        let result; 
       if (savedOffer) {
         savedOffer.offer_title = updatedOffer.offer_title;
         savedOffer.offer_description = updatedOffer.offer_description;
@@ -88,13 +90,15 @@ function authenticateToken(req, res, next) {
         savedOffer.schedule = updatedOffer.schedule;
         savedOffer.target = updatedOffer.target;
         savedOffer.pricing = updatedOffer.pricing;
+        result = 'updated successfully';
       } else {
-        const offer = new offerSchema(req.body);
+        const offer = new offerModel(req.body);
         await offer.validate();
         savedOffer = await offer.save();
+        result = 'created successfully';
       }
     
-      res.status(200).json(savedOffer);
+      res.status(200).json({result,savedOffer});
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Internal server error' });
