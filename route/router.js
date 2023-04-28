@@ -105,6 +105,25 @@ function authenticateToken(req, res, next) {
     }
   });
   
+  router.delete('/offers/:offerId', authenticateToken, async (req, res) => {
+    const offerId = req.params.offerId;
+    
+    try {
+        let savedOffer = await offerModel.findOneAndDelete({ offer_id: offerId });
+        // console.log(savedOffer);
+        let result; 
+      if (savedOffer) {
+        res.status(200).json({ result : 'deleted successfully'});
+      } else {
+        res.status(400).json({result : 'offer not found'});
+      }
+    
+      
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
   
   
 
