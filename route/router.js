@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const SECRET_KEY = "mysecretkey"
 const {userModel} = require('../Schema/userSchema')
 const {offerModel} = require('../Schema/userSchema')
+const {playerModel} = require('../Schema/userSchema')
 
 router.post('/signup' , async(req , res)=>{
     const {email , pass} = req.body;
@@ -55,6 +56,28 @@ router.post('/login', async(req, res) => {
         }
     }
 });
+
+router.get('/offers', async (req, res) => {
+    const { page = 1, records = 100, attribute = 'offer_title', query = '' } = req.query;
+  
+    try {
+      const searchRegex = new RegExp(query, 'i');
+      const totalRecords = await offerModel.countDocuments({ [attribute]: searchRegex });
+      const totalPages = Math.ceil(totalRecords / records);
+  
+      const offers = await offerModel.find({ [attribute]: searchRegex })
+        .skip((page - 1) * records)
+        .limit(parseInt(records));
+  
+      const hasMore = page < totalPages;
+  
+      res.status(200).json({ page, hasMore, offer: offers });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
@@ -124,6 +147,56 @@ function authenticateToken(req, res, next) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+router.post('/player', async(req, res) => {
+    let offers =[]
+    const player = req.body;
+    let allOffers = await offerModel.find({})
+    for (const offer of allOffers) {
+      const conditions = offer.target.split(' ');
+  
+      let match = true;
+      for (const condition of conditions) {
+        const [field, operator, value] = condition.split(' ');
+        if (operator === '>') {
+          if (!(player[field] > parseInt(value))) {
+            match = false;
+            break;
+          }
+        } else if (operator === '<') {
+          if (!(player[field] < parseInt(value))) {
+            match = false;
+            break;
+          }
+        } else if (operator === '>=') {
+          if (!(player[field] >= parseInt(value))) {
+            match = false;
+            break;
+          }
+        } else if (operator === '<=') {
+          if (!(player[field] <= parseInt(value))) {
+            match = false;
+            break;
+          }
+        } else if (operator === '==') {
+          if (!(player[field] === parseInt(value))) {
+            match = false;
+            break;
+          }
+        } else {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        offers.push(offer);
+      }
+    }
+  
+    // Send the matching offers as response
+    res.json({ offers });
+  });
+  
   
   
 
